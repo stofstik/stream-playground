@@ -9,9 +9,14 @@ class Generator extends Readable {
         super(options)
     }
 
+    randomData() {
+        return {data: Math.random(0, 10)}
+    }
+
     _read() {
-        this.push({yolo: 'bla'})
-        this.push(null)
+        setTimeout(() => {
+            this.push(this.randomData())
+        }, 1000)
     }
 }
 
@@ -23,11 +28,16 @@ class Printer extends Writable {
     }
 
     _write(object, encoding, callback) {
-        console.log(JSON.stringify(object))
+        console.log('writing', JSON.stringify(object))
+        callback()
     }
 }
 
 const gen = new Generator()
 const print = new Printer()
+
+gen.on('data', (data) => {
+    console.log('data generated', data)
+})
 
 gen.pipe(print)
