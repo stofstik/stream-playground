@@ -1,7 +1,6 @@
-const fs = require('fs');
-const Readable = require('stream').Readable;
-const Writable = require('stream').Writable;
-const Transform = require('stream').Transform;
+const Readable  = require('stream').Readable
+const Writable  = require('stream').Writable
+const Transform = require('stream').Transform
 
 class Generator extends Readable {
     constructor(options) {
@@ -47,9 +46,9 @@ class Printer extends Writable {
     }
 }
 
-const gen = new Generator()
+const gen     = new Generator()
 const lolzify = new Lolzify()
-const print = new Printer()
+const print   = new Printer()
 
 gen.on('data', (data) => {
     console.log('data generated', data)
