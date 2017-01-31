@@ -1,6 +1,7 @@
 const fs = require('fs');
 const Readable = require('stream').Readable;
 const Writable = require('stream').Writable;
+const Transform = require('stream').Transform;
 
 class Generator extends Readable {
     constructor(options) {
@@ -20,6 +21,19 @@ class Generator extends Readable {
     }
 }
 
+class Lolzify extends Transform {
+    constructor(source, options) {
+        if(!options) options = {}
+        options.readableObjectMode = true
+        options.writableObjectMode = true
+        super(options)
+    }
+
+    _transform(object, encoding, callback) {
+        callback(null, Object.assign({}, object, { lolz: true }))
+    }
+}
+
 class Printer extends Writable {
     constructor(options) {
         if(!options) options = {}
@@ -34,10 +48,11 @@ class Printer extends Writable {
 }
 
 const gen = new Generator()
+const lolzify = new Lolzify()
 const print = new Printer()
 
 gen.on('data', (data) => {
     console.log('data generated', data)
 })
 
-gen.pipe(print)
+gen.pipe(lolzify).pipe(print)
