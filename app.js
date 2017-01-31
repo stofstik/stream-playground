@@ -29,7 +29,11 @@ class Lolzify extends Transform {
     }
 
     _transform(object, encoding, callback) {
-        callback(null, Object.assign({}, object, { lolz: true }))
+        if(object.data > 0.5) {
+            callback(null, Object.assign({}, object, { lolz: true }))
+        } else {
+            callback(null, object)
+        }
     }
 }
 
