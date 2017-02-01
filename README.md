@@ -19,6 +19,9 @@ stringify.on('data', (data) => {
 Attachable to my node service registry https://github.com/stofstik/service-registry  
 So sockets can easily connect to it and listen to the generated data.
 
+### WIP
+Definitely needs work, error checking, best practices etc.
+
 ### Get running
 - `npm install`
 - `node app.js`
