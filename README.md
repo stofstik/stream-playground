@@ -2,6 +2,14 @@
 
 ### About
 Just messing around with node streams.  
+```javascript
+gen.pipe(lolzify).pipe(stringify).pipe(print);
+stringify.on('data', (data) => {
+  sockets.map((s) => {
+    s.write(data);
+  });
+});
+```
 - A readable stream generates some data.
 - Gets piped to a transform stream to _lolzify_ it.
 - Then gets piped to a to a stringify transform stream.
