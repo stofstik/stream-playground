@@ -1,11 +1,12 @@
-const Readable  = require('stream').Readable;
-const Writable  = require('stream').Writable;
-const Transform = require('stream').Transform;
-const net       = require('net');
-const ioClient  = require('socket.io-client');
+const { Readable }  = require('stream');
+const { Writable }  = require('stream');
+const net           = require('net');
+const ioClient      = require('socket.io-client');
+
+const { Lolzify, Stringify } = require('./transformers')
 
 const SERVICE_REGISTRY_URL = 'http://localhost:3001';
-const SERVICE_NAME = 'person-stream';
+const SERVICE_NAME         = 'person-stream';
 
 /*
  * Holds our connected sockets
@@ -30,48 +31,6 @@ class Generator extends Readable {
     setTimeout(() => {
       this.push(this.randomData());
     }, 1000);
-  }
-}
-
-/*
- * Add lolz
- */
-class Lolzify extends Transform {
-  constructor(source, options = {}) {
-    options.readableObjectMode = true;
-    options.writableObjectMode = true;
-    super(options);
-  }
-
-  _transform(object, encoding, callback) {
-    if (object.data > 0.5) {
-      callback(null, Object.assign({}, object, { lolz: true }));
-    } else {
-      callback(null, object);
-    }
-  }
-}
-
-/*
- * Transform stream to stringify objects and convert them to buffers
- */
-class Stringify extends Transform {
-  constructor(source, options = {}) {
-    options.readableObjectMode = true;
-    options.writableObjectMode = true;
-    super(options);
-  }
-
-  _transform(object, encoding, callback) {
-    if (object.data > 0.5) {
-      const string = JSON.stringify(Object.assign({}, object, { lolz: true }));
-      const buffer = Buffer.from(string, 'utf-8');
-      callback(null, buffer);
-    } else {
-      const string = JSON.stringify(object);
-      const buffer = Buffer.from(string, 'utf-8');
-      callback(null, buffer);
-    }
   }
 }
 
