@@ -1,10 +1,5 @@
-const { Writable }  = require('stream');
-const { Lolzify, Stringify } = require('./transformers');
-
-const ws = Writable();
-ws._write = function (chunk, enc, next) {
-  console.log(chunk);
-  next();
-}
-
-process.stdin.pipe(ws)
+process.stdin.on('readable', () => {
+  var buf = process.stdin.read(16);
+  console.log(buf);
+  process.stdin.read(0);
+});
