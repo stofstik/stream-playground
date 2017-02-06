@@ -8,6 +8,11 @@ class Overflower extends Readable {
     options.highWaterMark = 4;
     super(options);
     setInterval(() => {
+      // console.log('processing'); // fires a lot...
+      // make sure we dont overflow
+      // if (!this._readableState.flowing) {
+        // return;
+      // }
       const object = {
         time: new Date(),
         random: this.randomData(),
