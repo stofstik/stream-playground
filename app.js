@@ -1,5 +1,6 @@
 const { Readable }  = require('stream');
 const { Writable }  = require('stream');
+const { Transform }  = require('stream');
 const net           = require('net');
 const ioClient      = require('socket.io-client');
 
@@ -7,8 +8,6 @@ const { Lolzify, Stringify } = require('./transformers');
 
 const SERVICE_REGISTRY_URL = 'http://localhost:3001';
 const SERVICE_NAME         = 'person-stream';
-
-const LONG_TEXT = 'Dolor placeat cum cumque fugit corrupti? Beatae id consectetur cum voluptatum esse esse ab, amet? Asperiores suscipit vitae illo numquam non in ipsum? Velit officiis dolorum aliquam sit voluptas tempora!';
 
 /*
  * Holds our connected sockets
@@ -30,20 +29,39 @@ class Generator extends Readable {
   }
 
   _read() {
-    console.log('read');
-    this.push(this.randomData());
+    console.log('read!');
+    setTimeout(() => {
+      this.push(this.randomData());
+    }, 1000);
   }
 }
 
-class TextStream extends Readable {
+class StreamCombine extends Readable {
   constructor(options = {}) {
-    options.objectMode = false;
     super(options);
+    this._busy = false;
   }
 
   _read() {
-    this.push(LONG_TEXT);
-    this.push(null);
+    if(this._busy) return;
+    this._busy = true;
+    this.retrieveMoreData();
+  }
+
+  retrieveMoreData() {
+    this.doSomeWork((error, newData) => {
+      if(error) this.emit('error', err)
+      const pushMore = this.push(newData);
+      if(pushMore) {
+        this.retrieveMoreData();
+      } else {
+        this._busy = false;
+      }
+    });
+  }
+
+  doSomeWork() {
+
   }
 }
 
@@ -64,41 +82,36 @@ class Printer extends Writable {
 /*
  * Initiate streams
  */
-const textStream    = new TextStream();
 const gen           = new Generator();
 const lolzify       = new Lolzify();
+const timeify       = new Transform();
 const stringify     = new Stringify();
+const streamCombine = new StreamCombine();
 const print         = new Printer();
+
+timeify._write = function(chunk, enc, next) {
+  console.log();
+  next();
+};
+
+// Try with: '( cat /dev/urandom  ) | node printer.js' : ) hehehe
+process.stdin.on('readable', () => {
+  var buf = process.stdin.read(16);
+  // console.log(buf.length);
+  sockets.map((s) => {
+    s.write(buf);
+  });
+  process.stdin.read(0);
+});
 
 /*
  * Set up streams
  */
-textStream.on('readable', () => {
-  function getStuff() {
-    let chunk;
-    if ((chunk = textStream.read(16)) !== null) {
-      setTimeout(() => {
-        console.log(chunk.length);
-        stringify.write(chunk);
-        print.write(chunk);
-        getStuff();
-      }, 1000);
-    }
-  }
-  getStuff();
+stringify.on('data', (data) => {
+  sockets.map((s) => {
+    s.write(data);
+  });
 });
-
-const ws = Writable();
-ws._write = function (chunk, enc, next) {
-  console.log(chunk);
-  next();
-}
-
-// stringify.on('readable', (data) => {
-  // sockets.map((s) => {
-    // s.write(data);
-  // });
-// });
 
 /*
  * Initiate Net server
@@ -115,8 +128,6 @@ server.on('error', (err) => {
 server.on('connection', (socket) => {
   sockets.push(socket);
   console.log('socket connected:', sockets.length);
-  process.stdin.pipe(socket);
-
 });
 server.listen(() => {
   console.log('opened server on', server.address());
