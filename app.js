@@ -28,9 +28,39 @@ class Generator extends Readable {
   }
 
   _read() {
+    console.log('read!');
     setTimeout(() => {
       this.push(this.randomData());
     }, 1000);
+  }
+}
+
+class StreamCombine extends Readable {
+  constructor(options = {}) {
+    super(options);
+    this._busy = false
+  }
+
+  _read() {
+    if(this._busy) return;
+    this._busy = true;
+    this.retrieveMoreData();
+  }
+
+  retrieveMoreData() {
+    this.doSomeWork((error, newData) => {
+      if(error) this.emit('error', err)
+      const pushMore = this.push(newData);
+      if(pushMore) {
+        this.retrieveMoreData();
+      } else {
+        this._busy = false;
+      }
+    });
+  }
+
+  doSomeWork() {
+
   }
 }
 
@@ -51,15 +81,16 @@ class Printer extends Writable {
 /*
  * Initiate streams
  */
-const gen       = new Generator();
-const lolzify   = new Lolzify();
-const stringify = new Stringify();
-const print     = new Printer();
+const gen           = new Generator();
+const lolzify       = new Lolzify();
+const stringify     = new Stringify();
+const streamCombine = new StreamCombine();
+const print         = new Printer();
 
 /*
  * Set up streams
  */
-gen.pipe(lolzify).pipe(stringify).pipe(print);
+streamCombine.pipe(print);
 stringify.on('data', (data) => {
   sockets.map((s) => {
     s.write(data);
