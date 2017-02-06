@@ -3,10 +3,12 @@ const { Writable }  = require('stream');
 const net           = require('net');
 const ioClient      = require('socket.io-client');
 
-const { Lolzify, Stringify } = require('./transformers')
+const { Lolzify, Stringify } = require('./transformers');
 
 const SERVICE_REGISTRY_URL = 'http://localhost:3001';
 const SERVICE_NAME         = 'person-stream';
+
+const LONG_TEXT = 'Dolor placeat cum cumque fugit corrupti? Beatae id consectetur cum voluptatum esse esse ab, amet? Asperiores suscipit vitae illo numquam non in ipsum? Velit officiis dolorum aliquam sit voluptas tempora!';
 
 /*
  * Holds our connected sockets
@@ -28,39 +30,20 @@ class Generator extends Readable {
   }
 
   _read() {
-    console.log('read!');
-    setTimeout(() => {
-      this.push(this.randomData());
-    }, 1000);
+    console.log('read');
+    this.push(this.randomData());
   }
 }
 
-class StreamCombine extends Readable {
+class TextStream extends Readable {
   constructor(options = {}) {
+    options.objectMode = false;
     super(options);
-    this._busy = false
   }
 
   _read() {
-    if(this._busy) return;
-    this._busy = true;
-    this.retrieveMoreData();
-  }
-
-  retrieveMoreData() {
-    this.doSomeWork((error, newData) => {
-      if(error) this.emit('error', err)
-      const pushMore = this.push(newData);
-      if(pushMore) {
-        this.retrieveMoreData();
-      } else {
-        this._busy = false;
-      }
-    });
-  }
-
-  doSomeWork() {
-
+    this.push(LONG_TEXT);
+    this.push(null);
   }
 }
 
@@ -81,21 +64,41 @@ class Printer extends Writable {
 /*
  * Initiate streams
  */
+const textStream    = new TextStream();
 const gen           = new Generator();
 const lolzify       = new Lolzify();
 const stringify     = new Stringify();
-const streamCombine = new StreamCombine();
 const print         = new Printer();
 
 /*
  * Set up streams
  */
-streamCombine.pipe(print);
-stringify.on('data', (data) => {
-  sockets.map((s) => {
-    s.write(data);
-  });
+textStream.on('readable', () => {
+  function getStuff() {
+    let chunk;
+    if ((chunk = textStream.read(16)) !== null) {
+      setTimeout(() => {
+        console.log(chunk.length);
+        stringify.write(chunk);
+        print.write(chunk);
+        getStuff();
+      }, 1000);
+    }
+  }
+  getStuff();
 });
+
+const ws = Writable();
+ws._write = function (chunk, enc, next) {
+  console.log(chunk);
+  next();
+}
+
+// stringify.on('readable', (data) => {
+  // sockets.map((s) => {
+    // s.write(data);
+  // });
+// });
 
 /*
  * Initiate Net server
@@ -112,6 +115,8 @@ server.on('error', (err) => {
 server.on('connection', (socket) => {
   sockets.push(socket);
   console.log('socket connected:', sockets.length);
+  process.stdin.pipe(socket);
+
 });
 server.listen(() => {
   console.log('opened server on', server.address());
