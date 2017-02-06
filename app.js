@@ -1,9 +1,11 @@
 const { Readable }  = require('stream');
 const { Writable }  = require('stream');
+const fs           = require('fs');
 const net           = require('net');
 const ioClient      = require('socket.io-client');
 
-const { Lolzify, Stringify } = require('./transformers')
+const { Overflower, Generator, Sensible } = require('./readables');
+const { Lolzify, Stringify } = require('./transformers');
 
 const SERVICE_REGISTRY_URL = 'http://localhost:3001';
 const SERVICE_NAME         = 'person-stream';
@@ -14,61 +16,11 @@ const SERVICE_NAME         = 'person-stream';
 let sockets = [];
 
 /*
- * Readable stream that emits random data every 1 sec
- * TODO This timeout approach smells, what might be a better way?
- */
-class Generator extends Readable {
-  constructor(options = {}) {
-    options.objectMode = true;
-    super(options);
-  }
-
-  randomData() {
-    return { data: Math.random(0, 10) };
-  }
-
-  _read() {
-    console.log('read!');
-    setTimeout(() => {
-      this.push(this.randomData());
-    }, 1000);
-  }
-}
-
-class StreamCombine extends Readable {
-  constructor(options = {}) {
-    super(options);
-    this._busy = false
-  }
-
-  _read() {
-    if(this._busy) return;
-    this._busy = true;
-    this.retrieveMoreData();
-  }
-
-  retrieveMoreData() {
-    this.doSomeWork((error, newData) => {
-      if(error) this.emit('error', err)
-      const pushMore = this.push(newData);
-      if(pushMore) {
-        this.retrieveMoreData();
-      } else {
-        this._busy = false;
-      }
-    });
-  }
-
-  doSomeWork() {
-
-  }
-}
-
-/*
  * Prints out chunks to console in utf-8
  */
 class Printer extends Writable {
   constructor(options = {}) {
+    options.objectMode = true;
     super(options);
   }
 
@@ -81,16 +33,28 @@ class Printer extends Writable {
 /*
  * Initiate streams
  */
+const overflower    = new Overflower();
 const gen           = new Generator();
 const lolzify       = new Lolzify();
 const stringify     = new Stringify();
-const streamCombine = new StreamCombine();
+const sensible      = new Sensible();
 const print         = new Printer();
+
+const stdout = process.stdout;
+
+overflower.on('data', (chunk) => {
+  stdout.write('received ' + chunk.toString() + '\n');
+  overflower.pause();
+  setTimeout(() => {
+    overflower.resume();
+  }, 2000);
+});
+
+// overflower.pipe(stdout);
 
 /*
  * Set up streams
  */
-streamCombine.pipe(print);
 stringify.on('data', (data) => {
   sockets.map((s) => {
     s.write(data);
