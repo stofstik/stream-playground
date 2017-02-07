@@ -21,7 +21,7 @@ class Overflower extends Readable {
       const json = JSON.stringify(object);
       console.log('pushing', json);
       this.push(json);
-    }, 100);
+    }, 500);
   }
 
   randomData() {

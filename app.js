@@ -33,33 +33,14 @@ class Printer extends Writable {
 /*
  * Initiate streams
  */
-const overflower    = new Overflower();
-const gen           = new Generator();
-const lolzify       = new Lolzify();
-const stringify     = new Stringify();
-const sensible      = new Sensible();
-const print         = new Printer();
+const overflower = new Overflower();
+const gen        = new Generator();
+const lolzify    = new Lolzify();
+const stringify  = new Stringify();
+const sensible   = new Sensible();
+const print      = new Printer();
 
 const stdout = process.stdout;
-
-overflower.on('data', (chunk) => {
-  stdout.write('received ' + chunk.toString() + '\n');
-  overflower.pause();
-  setTimeout(() => {
-    overflower.resume();
-  }, 2000);
-});
-
-// overflower.pipe(stdout);
-
-/*
- * Set up streams
- */
-stringify.on('data', (data) => {
-  sockets.map((s) => {
-    s.write(data);
-  });
-});
 
 /*
  * Initiate Net server
@@ -75,6 +56,9 @@ server.on('error', (err) => {
 });
 server.on('connection', (socket) => {
   sockets.push(socket);
+  sockets.map((s) => {
+    overflower.pipe(s);
+  });
   console.log('socket connected:', sockets.length);
 });
 server.listen(() => {
