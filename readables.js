@@ -67,7 +67,6 @@ class Generator extends Readable {
 
 class Sensible extends Readable {
   constructor(options = {}) {
-    options.highWaterMark = 4;
     super(options);
     this._busy = false;
   }
