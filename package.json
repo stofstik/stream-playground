@@ -14,6 +14,7 @@
     "eslint-plugin-import": "^2.2.0"
   },
   "dependencies": {
+    "jsonstream2": "^1.1.1",
     "socket.io-client": "^1.7.2"
   }
 }

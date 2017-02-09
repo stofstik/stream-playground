@@ -1,5 +1,6 @@
 const { Readable }  = require('stream');
 
+
 class Overflower extends Readable {
   constructor(options = {}, overflow = false) {
     options.objectMode = false;
@@ -65,6 +66,7 @@ class Generator extends Readable {
 
 class Sensible extends Readable {
   constructor(options = {}) {
+    options.objectMode = true;
     super(options);
     this._busy = false;
   }
@@ -96,10 +98,8 @@ class Sensible extends Readable {
   }
 
   doSomeWork(callback) {
-    callback(null, JSON.stringify({
-      date: new Date(),
-      'G-buf': this._readableState.buffer.length
-    }) + '\n');
+    callback(null,
+      { date: new Date(), 'gBuf': this._readableState.buffer.length });
   }
 }
 

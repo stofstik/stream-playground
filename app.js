@@ -1,4 +1,5 @@
 const net          = require('net');
+const jsonstream   = require('jsonstream2');
 const { Client }   = require('./service-registry');
 const { Sensible } = require('./readables');
 
@@ -8,6 +9,8 @@ const SERVICE_NAME = 'person-stream';
  * Initiate streams
  */
 const sensible = new Sensible();
+
+const stringified = sensible.pipe(jsonstream.stringify(false));
 
 /*
  * Initiate Net server
@@ -22,7 +25,7 @@ const server = net.createServer((socket) => {
     console.log('socket error:', error);
   });
   // Pipe generator data to this newly connected socket
-  sensible.pipe(socket);
+  stringified.pipe(socket);
 });
 // Set error listener for server
 server.on('error', (err) => {
