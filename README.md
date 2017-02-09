@@ -3,11 +3,9 @@
 ### About
 Just messing around with node streams.  
 ```javascript
-gen.pipe(lolzify).pipe(stringify).pipe(print);
-stringify.on('data', (data) => {
-  sockets.map((s) => {
-    s.write(data);
-  });
+const server = net.createServer((socket) => {
+  // When a new socket connection starts pipe data from a readable stream to it
+  sensible.pipe(socket);
 });
 ```
 - A readable stream generates some data.
