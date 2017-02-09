@@ -1,92 +1,39 @@
-const { Readable }  = require('stream');
-const { Writable }  = require('stream');
-const fs           = require('fs');
-const net           = require('net');
-const ioClient      = require('socket.io-client');
+const net          = require('net');
+const { Client }   = require('./service-registry');
+const { Sensible } = require('./readables');
 
-const { Overflower, Generator, Sensible } = require('./readables');
-const { Lolzify, Stringify } = require('./transformers');
-
-const SERVICE_REGISTRY_URL = 'http://localhost:3001';
-const SERVICE_NAME         = 'person-stream';
-
-/*
- * Holds our connected sockets
- */
-let sockets = [];
-
-/*
- * Prints out chunks to console in utf-8
- */
-class Printer extends Writable {
-  constructor(options = {}) {
-    options.objectMode = true;
-    super(options);
-  }
-
-  _write(chunk, encoding, callback) {
-    console.log(chunk.toString('utf-8'));
-    callback();
-  }
-}
+const SERVICE_NAME = 'person-stream';
 
 /*
  * Initiate streams
  */
-const overflower = new Overflower({}, false); // overflow true/false
-const gen        = new Generator();
-const lolzify    = new Lolzify();
-const stringify  = new Stringify();
-const sensible   = new Sensible();
-const print      = new Printer();
-
-const stdout = process.stdout;
-
-/*
- * overflower.on('data', (chunk) => {
- *    stdout.write('received ' + chunk.toString() + '\n');
- *    sensible.pause();
- *    setTimeout(() => {
- *      sensible.resume();
- *    }, 2000);
- * });
- */
+const sensible = new Sensible();
 
 /*
  * Initiate Net server
  */
 const server = net.createServer((socket) => {
+  console.log('socket connected:', socket.address().port);
+  // Set some event listeners for this connection
   socket.on('close', () => {
-    sockets.splice(sockets.indexOf(socket), 1);
-    console.log('socket disconnected:', sockets.length);
+    console.log('socket disconnected:');
   });
-  socket.on('error', () => {
-    console.log('socket error:');
+  socket.on('error', (error) => {
+    console.log('socket error:', error);
   });
+  // Pipe generator data to this newly connected socket
+  sensible.pipe(socket);
 });
+// Set error listener for server
 server.on('error', (err) => {
   throw err;
 });
-server.on('connection', (socket) => {
-  sensible.pipe(socket);
-  sockets.push(socket);
-  console.log('socket connected:', sockets.length);
-});
-server.listen(() => {
-  console.log('opened server on', server.address());
-});
 
 /*
- * Service registry logic
+ * Start server on a random port
  */
-const serviceRegistry =
-  ioClient.connect(SERVICE_REGISTRY_URL, { reconnection: true });
-serviceRegistry.on('connect', () => {
-  console.log('service registry connected');
-  // Tell the registry we are a service
-  serviceRegistry.emit('service-up',
-    { name: SERVICE_NAME, port: server.address().port });
-});
-serviceRegistry.on('disconnect', () => {
-  console.log('service registry disconnected');
+server.listen(() => {
+  console.log('opened server on', server.address());
+  // App started, connect to the service registry
+  new Client(server, SERVICE_NAME).connect();
 });
