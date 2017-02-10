@@ -14,7 +14,9 @@
     "eslint-plugin-import": "^2.2.0"
   },
   "dependencies": {
+    "chance": "^1.0.4",
     "jsonstream2": "^1.1.1",
-    "socket.io-client": "^1.7.2"
+    "socket.io-client": "^1.7.2",
+    "underscore": "^1.8.3"
   }
 }

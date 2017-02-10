@@ -1,4 +1,6 @@
 const { Readable }  = require('stream');
+const Chance        = require('chance');
+const _             = require('underscore');
 
 
 class Overflower extends Readable {
@@ -70,6 +72,8 @@ class Sensible extends Readable {
     options.highWaterMark = 4;
     super(options);
     this._busy = false;
+    this.types = [ 'first', 'last', 'gender', 'birthday', 'age', 'ssn' ];
+    this.chance = new Chance();
   }
 
   _read() {
@@ -89,6 +93,7 @@ class Sensible extends Readable {
         // this.push returns true if we are allowed to push into internal buffer
         const pushMore = this.push(newData);
         if (pushMore) {
+          console.log('Pushing', newData);
           this.retrieveMoreData();
         } else {
           console.log('HWM reached stopping generator');
@@ -99,8 +104,15 @@ class Sensible extends Readable {
   }
 
   doSomeWork(callback) {
-    callback(null,
-      { date: new Date(), 'gBuf': this._readableState.buffer.length });
+    const object = _.chain(this.types)
+      .map((t) => {
+        if (this.chance[t]) {
+          return [ t, this.chance[t]() ];
+        }
+      })
+      .object()
+      .value();
+    callback(null, object);
   }
 }
 
