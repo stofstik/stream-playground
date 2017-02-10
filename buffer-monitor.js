@@ -14,6 +14,8 @@ gen
   // .pipe(JSONStream.parse())
   .pipe(third);
 
+third.cork();
+
 const logger = setInterval(() => {
   const genR = gen._readableState.buffer.length;
   const fr = first._readableState.buffer.length;
@@ -30,4 +32,10 @@ const logger = setInterval(() => {
       .pipe( r: %s, w: %s ${second._readableState.flowing} )
       .pipe( r: %s, w: %s ${third._readableState.flowing} )`,
     new Date(), genR, fr, fw, sr, sw, tr, tw);
+  if (genR >= 3) {
+    setTimeout(() => {
+      clearInterval(logger);
+      third.uncork();
+    }, 5000);
+  }
 }, 1000);
