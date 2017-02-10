@@ -66,7 +66,8 @@ class Generator extends Readable {
 
 class Sensible extends Readable {
   constructor(options = {}) {
-    options.objectMode = true;
+    options.objectMode    = true;
+    options.highWaterMark = 4;
     super(options);
     this._busy = false;
   }
@@ -88,9 +89,9 @@ class Sensible extends Readable {
         // this.push returns true if we are allowed to push into internal buffer
         const pushMore = this.push(newData);
         if (pushMore) {
-          console.log(newData);
           this.retrieveMoreData();
         } else {
+          console.log('HWM reached stopping generator');
           this._busy = false;
         }
       });

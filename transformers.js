@@ -1,10 +1,10 @@
-const { Transform } = require('stream');
+const { Transform, Duplex } = require('stream');
 
 /*
  * Lolzify object if data > 0.5
  */
 class Lolzify extends Transform {
-  constructor(source, options = {}) {
+  constructor(options = {}) {
     options.readableObjectMode = true;
     options.writableObjectMode = true;
     super(options);
@@ -15,6 +15,31 @@ class Lolzify extends Transform {
       callback(null, Object.assign({}, object, { lolz: true }));
     } else {
       callback(null, object);
+    }
+  }
+}
+
+class MyDuplex extends Duplex {
+  constructor(name = '', options = {}) {
+    options.objectMode    = true;
+    options.highWaterMark = 4;
+    super(options);
+    this.name    = name;
+    this.getMore = [];
+  }
+
+  _write(object, enc, cb) {
+    const pushMore = this.push(object);
+    if (pushMore) {
+      cb();
+    } else {
+      this.getMore.push(cb);
+    }
+  }
+
+  _read() {
+    while (this.getMore.length) {
+      this.getMore.shift()();
     }
   }
 }
@@ -48,4 +73,4 @@ class Stringify extends Transform {
 // module.exports.Lolzify   = Lolzify;
 // module.exports.Stringify = Stringify;
 
-module.exports = { Lolzify, Stringify };
+module.exports = { Lolzify, Stringify, MyDuplex };
