@@ -7,11 +7,14 @@ const first  = new MyDuplex('first');
 const second = new MyDuplex('second');
 const third  = new MyDuplex('third');
 
+const stringify = JSONStream.stringify(false);
+const parse = JSONStream.parse();
+
 gen
   .pipe(first)
   .pipe(second)
-  // .pipe(JSONStream.stringify(false))
-  // .pipe(JSONStream.parse())
+  .pipe(stringify)
+  .pipe(parse)
   .pipe(third);
 
 third.cork();
@@ -30,6 +33,10 @@ const logger = setInterval(() => {
       .pipe( r: %s       ${gen._readableState.flowing} )
       .pipe( r: %s, w: %s ${first._readableState.flowing} )
       .pipe( r: %s, w: %s ${second._readableState.flowing} )
+      .pipe( stringify R: ${JSON.stringify(stringify._readableState.buffer.length)} )
+      .pipe( stringify W: ${JSON.stringify(stringify._writableState.buffer.length)} )
+      .pipe( parse R: ${JSON.stringify(parse._readableState.buffer.length)} )
+      .pipe( parse W: ${JSON.stringify(parse._writableState.buffer.length)} )
       .pipe( r: %s, w: %s ${third._readableState.flowing} )`,
     new Date(), genR, fr, fw, sr, sw, tr, tw);
   if (genR >= 3) {
